@@ -1,7 +1,10 @@
 import json
-from src.experiments.base_experiment import BaseExperiment
 from src.utils.data_utils import load_json
 from src.utils.api_utils import make_api_call
+
+class BaseExperiment:
+    def __init__(self, model):
+        self.model = model
 
 class MachIVExperiment(BaseExperiment):
     def __init__(self, model, persona_prompt=None):

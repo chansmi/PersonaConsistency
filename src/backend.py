@@ -2,18 +2,30 @@ import os
 from dotenv import load_dotenv
 import openai
 import google.generativeai as genai
-#from anthropic import Anthropic
+# from anthropic import Anthropic
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 # Load environment variables from .env file
 load_dotenv()
+
+def model_backend_factory(model_name):
+    """
+    Factory function to instantiate the appropriate backend based on the model name.
+    """
+    if 'gpt' in model_name.lower():
+        return OpenAIBackend(model_name)
+    elif 'gemini' in model_name.lower():
+        return GeminiBackend(model_name)
+    else:
+        raise ValueError(f"No backend available for model: {model_name}")
+
 
 class LanguageModel:
     def __init__(self, model_name):
         self.model_name = model_name
 
     def generate(self, prompt):
-        raise NotImplementedError
+        raise NotImplementedError("Subclass must implement abstract method")
 
 class OpenAIBackend(LanguageModel):
     def __init__(self, model_name):
@@ -31,7 +43,7 @@ class OpenAIBackend(LanguageModel):
                 ],
                 temperature=0.7
             )
-            return response['choices'][0]['message']['content'].strip()
+            return response.choices[0].message['content'].strip()
 
         except openai.error.OpenAIError as e:
             print(f"OpenAI API error: {e}")
@@ -39,26 +51,7 @@ class OpenAIBackend(LanguageModel):
         except Exception as e:
             print(f"Unexpected error: {e}")
             raise
-'''
-class AnthropicBackend(LanguageModel):
-    def __init__(self, model_name):
-        super().__init__(model_name)
-        Claude_API = os.getenv('CLAUDE_API_KEY')
-        self.anthropic = Anthropic(api_key=Claude_API)
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-    def generate(self, prompt):
-        try:
-            response = self.anthropic.completions.create(
-                prompt=f"{HUMAN_PROMPT} {prompt} {AI_PROMPT}",
-                model=self.model_name,
-                max_tokens_to_sample=1000
-            )
-            return response.completion.strip()
-        except Exception as e:
-            print(f"Unexpected error: {e}")
-            raise
-'''
 class GeminiBackend(LanguageModel):
     def __init__(self, model_name):
         super().__init__(model_name)
@@ -100,4 +93,5 @@ class GeminiBackend(LanguageModel):
                 {"role": "user", "parts": [prompt]},  
             ]
         )
-        return response.text
+        return response.text.strip()
+

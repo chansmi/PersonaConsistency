@@ -1,17 +1,20 @@
-from src.models.gpt3 import GPT3Model
-from src.experiments.mach_iv_experiment import MachIVExperiment
+import argparse
+from backend import model_backend_factory
+from experiments.mach_iv_experiment import MachIVExperiment
 
-def main():
-    # Run MACH-IV experiment with vanilla model
-    vanilla_model = GPT3Model()
-    vanilla_experiment = MachIVExperiment(vanilla_model)
-    vanilla_experiment.run()
+def main(model_name, persona_prompt=None):
+    # Initialize the appropriate backend for the given model
+    model_backend = model_backend_factory(model_name)
 
-    # Run MACH-IV experiment with persona development
-    persona_prompt = load_json("src/data/persona_prompts.json")["machiavellian"]
-    persona_model = GPT3Model()
-    persona_experiment = MachIVExperiment(persona_model, persona_prompt)
-    persona_experiment.run()
+    # Initialize and run the MachIVExperiment
+    experiment = MachIVExperiment(model_backend, persona_prompt)
+    experiment.run()
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Run Mach IV Experiment with specified model and optional persona.")
+    parser.add_argument("model_name", type=str, help="The name of the model to use for the experiment.")
+    parser.add_argument("--persona_prompt", type=str, default=None, help="Optional persona prompt to be used in the experiment.")
+    
+    args = parser.parse_args()
+    
+    main(args.model_name, args.persona_prompt)
