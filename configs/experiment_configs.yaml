@@ -1,0 +1,3 @@
+mach_iv:
+  model: gemini-pro
+  persona_prompt: mach_persona
