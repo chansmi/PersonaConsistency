@@ -1,14 +1,11 @@
 import json
+import os
 from src.utils.data_utils import load_json
 from src.utils.api_utils import make_api_call
 
-class BaseExperiment:
-    def __init__(self, model):
-        self.model = model
-
-class MachIVExperiment(BaseExperiment):
+class MachIVExperiment:
     def __init__(self, model, persona_prompt=None):
-        super().__init__(model)
+        self.model = model
         self.persona_prompt = persona_prompt
         self.questions = load_json("src/data/mach_iv_questions.json")
 
@@ -36,8 +33,18 @@ class MachIVExperiment(BaseExperiment):
         return log_probs
 
     def save_results(self):
-        output_file = "results/vanilla_model/mach_iv_scores.json"
-        if self.persona_prompt:
-            output_file = "results/persona_model/mach_iv_scores.json"
+        persona_dir = self.persona_prompt.replace(" ", "_").lower() if self.persona_prompt else "vanilla"
+        model_dir = self.model.model_name.replace(" ", "_").lower()
+        
+        output_dir = f"results/{model_dir}/{persona_dir}"
+        os.makedirs(output_dir, exist_ok=True)
+        
+        output_file = f"{output_dir}/mach_iv_scores.json"
+        version = 1
+        # Check if the file exists and iterate version numbers if it does
+        while os.path.exists(f"{output_file[:-5]}_v{version}.json"):
+            version += 1
+        output_file = f"{output_file[:-5]}_v{version}.json"
+
         with open(output_file, "w") as f:
-            json.dump(self.results, f)
+            json.dump(self.results, f, indent=4)
