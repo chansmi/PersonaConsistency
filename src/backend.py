@@ -1,6 +1,8 @@
 import os
 from dotenv import load_dotenv
-import openai
+from openai import OpenAI
+
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 import google.generativeai as genai
 # from anthropic import Anthropic
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -30,22 +32,19 @@ class LanguageModel:
 class OpenAIBackend(LanguageModel):
     def __init__(self, model_name):
         super().__init__(model_name)
-        openai.api_key = os.getenv('OPENAI_API_KEY')
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     def generate(self, prompt):
         try:
-            response = openai.ChatCompletion.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7
-            )
-            return response.choices[0].message['content'].strip()
+            response = client.chat.completions.create(model=self.model_name,
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7)
+            return response.choices[0].message.content.strip()
 
-        except openai.error.OpenAIError as e:
+        except openai.OpenAIError as e:
             print(f"OpenAI API error: {e}")
             raise
         except Exception as e:

@@ -31,26 +31,26 @@ class MachIVExperiment:
         try:
             parts = [part for part in response.replace('=', ' ').split() if part]
             for part in parts:
-                if part.isdigit():  # Check if the part is a number
+                if part.isdigit():
                     selected_score = int(part)
                     if 0 <= selected_score <= 4:
                         return selected_score
                     else:
-                        break 
+                        break
         except ValueError:
-            pass  
+            pass
         print(f"Invalid score: {response}. Defaulting to 2.")
         return 2
 
-
-def save_results(self):
-    model_dir = self.model.model_name.replace(" ", "_").lower()
-    output_dir = f"../results/{model_dir}" 
-    os.makedirs(output_dir, exist_ok=True)  
-    output_file = f"{output_dir}/mach_iv_scores.json"
-    version = 1
-    while os.path.exists(f"{output_file[:-5]}_v{version}.json"):
-        version += 1
-    output_file = f"{output_file[:-5]}_v{version}.json"  
-    with open(output_file, "w") as f:
-        json.dump(self.results, f, indent=4)
+    def save_results(self):
+        model_dir = self.model.model_name.replace(" ", "_").lower()
+        persona_dir = self.persona_prompt.replace("data/personas/", "").replace(".json", "")
+        output_dir = f"../results/{model_dir}/{persona_dir}"
+        os.makedirs(output_dir, exist_ok=True)
+        output_file = f"{output_dir}/mach_iv_scores.json"
+        version = 1
+        while os.path.exists(f"{output_file[:-5]}_v{version}.json"):
+            version += 1
+        output_file = f"{output_file[:-5]}_v{version}.json"
+        with open(output_file, "w") as f:
+            json.dump(self.results, f, indent=4)
