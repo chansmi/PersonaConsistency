@@ -1,6 +1,6 @@
 import argparse
 from backend import model_backend_factory
-from experiments.mach_iv_experiment import MachIVExperiment
+from experiments.machIV_experiment import MachIVExperiment
 
 def main(model_name, persona_prompt=None):
     # Initialize the appropriate backend for the given model
