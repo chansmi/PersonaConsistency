@@ -4,8 +4,10 @@ from openai import OpenAI
 
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 import google.generativeai as genai
+
 # from anthropic import Anthropic
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -41,7 +43,7 @@ class OpenAIBackend(LanguageModel):
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.7)
+            temperature=1.0)
             return response.choices[0].message.content.strip()
 
         except openai.OpenAIError as e:
@@ -50,13 +52,12 @@ class OpenAIBackend(LanguageModel):
         except Exception as e:
             print(f"Unexpected error: {e}")
             raise
-
 class GeminiBackend(LanguageModel):
     def __init__(self, model_name):
         super().__init__(model_name)
         GEMINI_API = os.getenv('GEMINI_API_KEY')
         genai.configure(api_key=GEMINI_API)
-        
+
         generation_config = {
             "temperature": 1.0,
             "top_p": 1.0,
@@ -73,24 +74,30 @@ class GeminiBackend(LanguageModel):
                 "threshold": "BLOCK_NONE"
             },
             {
-                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", 
+                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
                 "threshold": "BLOCK_NONE"
             },
             {
                 "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                "threshold": "BLOCK_NONE"  
+                "threshold": "BLOCK_NONE"
             }
         ]
-        
+
         self.gemini = genai.GenerativeModel(model_name=model_name,
                                             generation_config=generation_config,
                                             safety_settings=safety_settings)
 
+    @retry(wait=wait_exponential(multiplier=1, min=4, max=60),
+           stop=stop_after_attempt(10))
     def generate(self, prompt):
-        response = self.gemini.generate_content(
-            contents=[
-                {"role": "user", "parts": [prompt]},  
-            ]
-        )
-        return response.text.strip()
+        while True: 
+            try:
+                response = self.gemini.generate_content(
+                    contents=[
+                        {"role": "user", "parts": [prompt]},
+                    ]
+                )
+                return response.text.strip()
 
+            except Exception as e: 
+                print(f"API call failed: {e}")
